@@ -17,6 +17,9 @@
 // tinyfiledialogs
 #include "tinyfiledialogs.h"
 
+// imgui
+#include "imgui/imgui.h"
+
 //
 //
 // globals
