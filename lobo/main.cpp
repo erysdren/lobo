@@ -95,7 +95,7 @@ void Init(int w, int h, const char *title)
 	// init imgui
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGuiIO &io = ImGui::GetIO(); (void)io;
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(GlfwWindow, true);
 	ImGui_ImplOpenGL3_Init("#version 130");
