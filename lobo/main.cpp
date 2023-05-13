@@ -55,6 +55,17 @@ void Error(const char *s, ...)
 }
 
 //
+// GlfwError
+//
+
+void GlfwError()
+{
+	const char *error;
+	glfwGetError(&error);
+	Error("%s", error);	
+}
+
+//
 // Init
 //
 
@@ -62,13 +73,19 @@ void Init(int w, int h, const char *title)
 {
 	// init library
 	if (glfwInit() != GLFW_TRUE)
-		Error("Couldn't init GLFW");
+		GlfwError();
 
 	// open window
 	glfwDefaultWindowHints();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	GlfwWindow = glfwCreateWindow(w, h, title, NULL, NULL);
 	if (GlfwWindow == NULL)
-		Error("GlfwWindow is NULL!");
+		GlfwError();
+
+	// make current
+	glfwMakeContextCurrent(GlfwWindow);
+	glfwSwapInterval(1);
 }
 
 //
@@ -83,6 +100,26 @@ void DeInit()
 
 	// cloes library
 	glfwTerminate();
+}
+
+//
+// StartFrame
+//
+
+void StartFrame()
+{
+	glfwPollEvents();
+}
+
+//
+// EndFrame
+//
+
+void EndFrame()
+{
+	glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glfwSwapBuffers(GlfwWindow);
 }
 
 //
@@ -118,7 +155,15 @@ int main(int argc, char **argv)
 	// main render loop
 	while (!glfwWindowShouldClose(GlfwWindow))
 	{
-		glfwPollEvents();
+		// poll events
+		StartFrame();
+
+		// process inputs
+		if (glfwGetKey(GlfwWindow, GLFW_KEY_ESCAPE))
+			glfwSetWindowShouldClose(GlfwWindow, GLFW_TRUE);
+
+		// double buffer
+		EndFrame();
 	}
 
 	// deinit
