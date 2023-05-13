@@ -8,6 +8,9 @@ set(IMGUI_SOURCES
 	imgui_tables.cpp
 	imgui_widgets.cpp
 	imgui.cpp
+	backends/imgui_impl_glfw.cpp
+	backends/imgui_impl_opengl3.cpp
 )
 
 add_library(imgui ${IMGUI_SOURCES})
+target_include_directories(imgui PRIVATE ${PROJECT_SOURCE_DIR})

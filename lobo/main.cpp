@@ -19,6 +19,8 @@
 
 // imgui
 #include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_glfw.h"
+#include "imgui/backends/imgui_impl_opengl3.h"
 
 // gl
 #include "GLFW/glfw3.h"
@@ -86,6 +88,14 @@ void Init(int w, int h, const char *title)
 	// make current
 	glfwMakeContextCurrent(GlfwWindow);
 	glfwSwapInterval(1);
+
+	// init imgui
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForOpenGL(GlfwWindow, true);
+	ImGui_ImplOpenGL3_Init("#version 130");
 }
 
 //
@@ -94,6 +104,11 @@ void Init(int w, int h, const char *title)
 
 void DeInit()
 {
+	// imgui
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
 	// close window
 	if (GlfwWindow)
 		glfwDestroyWindow(GlfwWindow);
@@ -108,7 +123,13 @@ void DeInit()
 
 void StartFrame()
 {
+	// glfw
 	glfwPollEvents();
+
+	// imgui
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
 }
 
 //
@@ -117,9 +138,34 @@ void StartFrame()
 
 void EndFrame()
 {
+	// clear
 	glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// imgui
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	// show
 	glfwSwapBuffers(GlfwWindow);
+}
+
+//
+// QuitMainLoop
+//
+
+void QuitMainLoop()
+{
+	glfwSetWindowShouldClose(GlfwWindow, GLFW_TRUE);
+}
+
+//
+// LoadLev
+//
+
+void LoadLev()
+{
+
 }
 
 //
@@ -158,9 +204,18 @@ int main(int argc, char **argv)
 		// poll events
 		StartFrame();
 
-		// process inputs
-		if (glfwGetKey(GlfwWindow, GLFW_KEY_ESCAPE))
-			glfwSetWindowShouldClose(GlfwWindow, GLFW_TRUE);
+		// main menu bar
+		if (ImGui::BeginMainMenuBar())
+		{
+			if (ImGui::BeginMenu("File", true))
+			{
+				if (ImGui::MenuItem("Load")) { QuitMainLoop(); }
+				if (ImGui::MenuItem("Quit")) { QuitMainLoop(); }
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMainMenuBar();
+		}
 
 		// double buffer
 		EndFrame();
