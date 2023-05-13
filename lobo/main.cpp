@@ -20,6 +20,9 @@
 // imgui
 #include "imgui/imgui.h"
 
+// gl
+#include "GLFW/glfw3.h"
+
 //
 //
 // globals
@@ -28,6 +31,7 @@
 
 const char *LevPatterns[2] = {"*.lev", "*.LEV"};
 const char *LevFilename = NULL;
+GLFWwindow *GlfwWindow = NULL;
 
 //
 //
@@ -48,6 +52,37 @@ void Error(const char *s, ...)
 	va_end(ap);
 
 	exit(1);
+}
+
+//
+// Init
+//
+
+void Init(int w, int h, const char *title)
+{
+	// init library
+	if (glfwInit() != GLFW_TRUE)
+		Error("Couldn't init GLFW");
+
+	// open window
+	glfwDefaultWindowHints();
+	GlfwWindow = glfwCreateWindow(w, h, title, NULL, NULL);
+	if (GlfwWindow == NULL)
+		Error("GlfwWindow is NULL!");
+}
+
+//
+// DeInit
+//
+
+void DeInit()
+{
+	// close window
+	if (GlfwWindow)
+		glfwDestroyWindow(GlfwWindow);
+
+	// cloes library
+	glfwTerminate();
 }
 
 //
@@ -76,6 +111,18 @@ int main(int argc, char **argv)
 
 	// open lev
 	lev_quake_t lev(&kstream);
+
+	// init
+	Init(800, 600, "lobo");
+
+	// main render loop
+	while (!glfwWindowShouldClose(GlfwWindow))
+	{
+		glfwPollEvents();
+	}
+
+	// deinit
+	DeInit();
 
 	// return success
 	return 0;
