@@ -34,6 +34,9 @@
 const char *LevPatterns[2] = {"*.lev", "*.LEV"};
 const char *LevFilename = NULL;
 GLFWwindow *GlfwWindow = NULL;
+std::ifstream *FileStream = NULL;
+kaitai::kstream *KaitaiStream = NULL;
+lev_quake_t *Lev = NULL;
 
 //
 //
@@ -115,6 +118,11 @@ void DeInit()
 
 	// cloes library
 	glfwTerminate();
+
+	// clean up memory
+	if (Lev) delete Lev;
+	if (FileStream) delete FileStream;
+	if (KaitaiStream) delete KaitaiStream;
 }
 
 //
@@ -139,7 +147,7 @@ void StartFrame()
 void EndFrame()
 {
 	// clear
-	glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// imgui
@@ -163,9 +171,33 @@ void QuitMainLoop()
 // LoadLev
 //
 
-void LoadLev()
+void LoadLev(const char *filename)
 {
+	// clear old
+	if (Lev) delete Lev;
+	if (FileStream) delete FileStream;
+	if (KaitaiStream) delete KaitaiStream;
 
+	// load
+	if (filename)
+	{
+		LevFilename = (const char *)filename;
+	}
+	else
+	{
+		LevFilename = tinyfd_openFileDialog("Choose a LEV File", "", 2, LevPatterns, "Quake LEV Files", 0);
+		if (LevFilename == NULL) Error("LevFilename is NULL!");
+	}
+
+	// filestream
+	FileStream = new std::ifstream(LevFilename, std::ifstream::binary);
+	if (!FileStream->is_open()) Error("Couldn't open %s!", LevFilename);
+
+	// kaitaistream
+	KaitaiStream = new kaitai::kstream(FileStream);
+
+	// lev
+	Lev = new lev_quake_t(KaitaiStream);
 }
 
 //
@@ -174,26 +206,11 @@ void LoadLev()
 
 int main(int argc, char **argv)
 {
-	// check for arg
-	if (argc < 2)
-	{
-		LevFilename = tinyfd_openFileDialog("Choose a LEV File", "", 2, LevPatterns, "Quake LEV Files", 0);
-		if (LevFilename == NULL) Error("LevFilename is NULL!");
-	}
+	// load
+	if (argc > 1)
+		LoadLev(argv[1]);
 	else
-	{
-		LevFilename = (const char *)argv[1];
-	}
-
-	// open file stream
-	std::ifstream fstream(LevFilename, std::ifstream::binary);
-	if (!fstream.is_open()) Error("Couldn't open %s!", LevFilename);
-
-	// open kaitai stream
-	kaitai::kstream kstream(&fstream);
-
-	// open lev
-	lev_quake_t lev(&kstream);
+		LoadLev(NULL);
 
 	// init
 	Init(800, 600, "lobo");
@@ -209,7 +226,7 @@ int main(int argc, char **argv)
 		{
 			if (ImGui::BeginMenu("File", true))
 			{
-				if (ImGui::MenuItem("Load")) { QuitMainLoop(); }
+				if (ImGui::MenuItem("Load")) { LoadLev(NULL); }
 				if (ImGui::MenuItem("Quit")) { QuitMainLoop(); }
 				ImGui::EndMenu();
 			}
