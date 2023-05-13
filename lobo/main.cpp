@@ -51,10 +51,13 @@ lev_quake_t *Lev = NULL;
 void Error(const char *s, ...)
 {
 	va_list ap;
+	char buffer[128];
 
 	va_start(ap, s);
-	vfprintf(stderr, s, ap);
+	vsprintf(buffer, s, ap);
 	va_end(ap);
+
+	std::cerr << buffer << std::endl;
 
 	exit(1);
 }
