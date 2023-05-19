@@ -41,12 +41,13 @@
 //
 //
 
-const char *LevPatterns[2] = {"*.lev", "*.LEV"};
-const char *LevFilename = NULL;
-std::ifstream *FileStream = NULL;
-kaitai::kstream *KaitaiStream = NULL;
-lev_quake_t *Lev = NULL;
-ostgl_context *GlContext = NULL;
+const char *lev_patterns[2] = {"*.lev", "*.LEV"};
+const char *lev_filename = NULL;
+std::ifstream *lev_fstream = NULL;
+kaitai::kstream *lev_kstream = NULL;
+lev_quake_t *lev = NULL;
+ostgl_context *gl_context = NULL;
+GLuint gl_model;
 
 //
 //
@@ -55,44 +56,56 @@ ostgl_context *GlContext = NULL;
 //
 
 //
-// LoadLev
+// lev_load
 //
 
-void LoadLev(const char *filename)
+void lev_load(const char *filename)
 {
 	// clear old
-	if (Lev) delete Lev;
-	if (FileStream) delete FileStream;
-	if (KaitaiStream) delete KaitaiStream;
+	if (lev) delete lev;
+	if (lev_fstream) delete lev_fstream;
+	if (lev_kstream) delete lev_kstream;
 
 	// load
 	if (filename)
 	{
-		LevFilename = (const char *)filename;
+		lev_filename = (const char *)filename;
 	}
 	else
 	{
-		LevFilename = tinyfd_openFileDialog("Choose a LEV File", "", 2, LevPatterns, "Quake LEV Files", 0);
-		if (LevFilename == NULL)
+		lev_filename = tinyfd_openFileDialog("Choose a LEV File", "", 2, lev_patterns, "Quake LEV Files", 0);
+		if (lev_filename == NULL)
 		{
-			shim_error("LevFilename is NULL!");
+			shim_error("lev_filename is NULL!");
 			exit(1);
 		}
 	}
 
 	// filestream
-	FileStream = new std::ifstream(LevFilename, std::ifstream::binary);
-	if (!FileStream->is_open())
+	lev_fstream = new std::ifstream(lev_filename, std::ifstream::binary);
+	if (!lev_fstream->is_open())
 	{
-		shim_error("Couldn't open %s!", LevFilename);
+		shim_error("Couldn't open %s!", lev_filename);
 		exit(1);
 	}
 
 	// kaitaistream
-	KaitaiStream = new kaitai::kstream(FileStream);
+	lev_kstream = new kaitai::kstream(lev_fstream);
 
 	// lev
-	Lev = new lev_quake_t(KaitaiStream);
+	lev = new lev_quake_t(lev_kstream);
+
+	// gl
+	gl_model = glGenLists(1);
+	glNewList(gl_model, GL_COMPILE);
+
+	for (int p = 0; p < lev->header()->num_planes(); p++)
+	{
+		for (int q = (*lev->planes())[p]->quad_start_index(); q < (*lev->planes())[p]->quad_end_index(); q++)
+		{
+			
+		}
+	}
 }
 
 //
@@ -103,29 +116,35 @@ int main(int argc, char **argv)
 {
 	// load lev
 	if (argc > 1)
-		LoadLev(argv[1]);
+		lev_load(argv[1]);
 	else
-		LoadLev(NULL);
+		lev_load(NULL);
 
 	// init window
-	GlContext = ostgl_create_context(WIDTH, HEIGHT, BPP);
-	ostgl_make_current(GlContext);
-	shim_init(GlContext->width, GlContext->height, GlContext->depth, "lobo");
+	gl_context = ostgl_create_context(WIDTH, HEIGHT, BPP);
+	ostgl_make_current(gl_context);
+	shim_init(gl_context->width, gl_context->height, gl_context->depth, "lobo");
 
 	// main loop
 	while (shim_frame())
 	{
+		// process events
 		if (shim_key_read(SHIM_KEY_ESCAPE))
 			shim_should_quit(SHIM_TRUE);
 
-		glClearColor(1, 0, 1, 1);
+		// gl
+		glClearColor(0, 0, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		shim_blit(GlContext->width, GlContext->height, GlContext->depth, GlContext->pixels);
+		// blit
+		shim_blit(gl_context->width, gl_context->height, gl_context->depth, gl_context->pixels);
 	}
 
 	// shutdown
-	ostgl_delete_context(GlContext);
+	if (lev) delete lev;
+	if (lev_fstream) delete lev_fstream;
+	if (lev_kstream) delete lev_kstream;
+	ostgl_delete_context(gl_context);
 	shim_quit();
 
 	// return success
