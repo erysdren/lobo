@@ -95,17 +95,40 @@ void lev_load(const char *filename)
 	// lev
 	lev = new lev_quake_t(lev_kstream);
 
-	// gl
+	// begin list
 	gl_model = glGenLists(1);
 	glNewList(gl_model, GL_COMPILE);
+	glBegin(GL_QUADS);
 
+	// planes
 	for (int p = 0; p < lev->header()->num_planes(); p++)
 	{
-		for (int q = (*lev->planes())[p]->quad_start_index(); q < (*lev->planes())[p]->quad_end_index(); q++)
+		// get plane
+		lev_quake_t::plane_t *plane = (*lev->planes())[p];
+
+		// quads
+		for (int q = plane->quad_start_index(); q < plane->quad_end_index(); q++)
 		{
-			
+			// get quad
+			lev_quake_t::quad_t *quad = (*lev->quads())[q];
+
+			// vertices
+			for (int v = 0; v < 4; v++)
+			{
+				lev_quake_t::vertex_t *vertex = (*lev->vertices())[(*quad->vertex_indices())[v]];
+
+				float x = (*vertex->coords())[0] / 512.0f;
+				float y = (*vertex->coords())[1] / 512.0f;
+				float z = (*vertex->coords())[2] / 512.0f;
+
+				glVertex3f(x, y, z);
+			}
 		}
 	}
+
+	/* end list */
+	glEnd();
+	glEndList();
 }
 
 //
@@ -114,6 +137,13 @@ void lev_load(const char *filename)
 
 int main(int argc, char **argv)
 {
+	// init gl
+	gl_context = ostgl_create_context(WIDTH, HEIGHT, BPP);
+	ostgl_make_current(gl_context);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_DEPTH_TEST);
+
 	// load lev
 	if (argc > 1)
 		lev_load(argv[1]);
@@ -121,8 +151,6 @@ int main(int argc, char **argv)
 		lev_load(NULL);
 
 	// init window
-	gl_context = ostgl_create_context(WIDTH, HEIGHT, BPP);
-	ostgl_make_current(gl_context);
 	shim_init(gl_context->width, gl_context->height, gl_context->depth, "lobo");
 
 	// main loop
@@ -132,9 +160,16 @@ int main(int argc, char **argv)
 		if (shim_key_read(SHIM_KEY_ESCAPE))
 			shim_should_quit(SHIM_TRUE);
 
-		// gl
+		// clear screen
 		glClearColor(0, 0, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// do wireframe
+		GLfloat white[4] = {1.0, 1.0, 1.0, 1.0};
+		glPolygonMode(GL_FRONT, GL_LINE);
+		glMaterialfv(GL_FRONT, GL_EMISSION, white);
+		glPolygonOffset(0, -1);
+		glCallList(gl_model);
 
 		// blit
 		shim_blit(gl_context->width, gl_context->height, gl_context->depth, gl_context->pixels);
